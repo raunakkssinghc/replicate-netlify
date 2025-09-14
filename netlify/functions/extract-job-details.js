@@ -91,7 +91,16 @@ Output Format (use this structure but extract from the ACTUAL job description ab
             };
 
             const output = await replicate.run("deepseek-ai/deepseek-v3.1", { input });
-            const responseText = output.join("").trim();
+            let responseText = output.join("").trim();
+            
+            // Clean the response text - remove markdown code blocks if present
+            if (responseText.startsWith('```json')) {
+                responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (responseText.startsWith('```')) {
+                responseText = responseText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+            
+            console.log(`Attempt ${attempt}: Cleaned response:`, responseText);
             
             // Try to parse as JSON
             try {
