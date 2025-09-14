@@ -96,13 +96,26 @@ Output Format (use this structure but extract from the ACTUAL job description ab
             // Try to parse as JSON
             try {
                 const jsonResult = JSON.parse(responseText);
+                console.log(`Attempt ${attempt}: Parsed JSON:`, jsonResult);
                 
                 // Validate required fields
-                if (jsonResult.job_title && 
-                    (jsonResult.city === null || typeof jsonResult.city === 'string') &&
-                    (jsonResult.work_arrangement === null || ['remote', 'hybrid', 'on-site'].includes(jsonResult.work_arrangement)) &&
-                    (jsonResult.experience === null || ['Entry (0-2 Years)', 'Mid (3-5 Years)', 'Senior (6-8 Years)', 'Lead (8+ Years)'].includes(jsonResult.experience))) {
+                const hasValidJobTitle = jsonResult.job_title && typeof jsonResult.job_title === 'string' && jsonResult.job_title.trim().length > 0;
+                const hasValidCity = jsonResult.city === null || (typeof jsonResult.city === 'string');
+                const hasValidWorkArrangement = jsonResult.work_arrangement === null || ['remote', 'hybrid', 'on-site'].includes(jsonResult.work_arrangement);
+                const hasValidExperience = jsonResult.experience === null || ['Entry (0-2 Years)', 'Mid (3-5 Years)', 'Senior (6-8 Years)', 'Lead (8+ Years)'].includes(jsonResult.experience);
+                
+                console.log(`Validation results:`, {
+                    hasValidJobTitle,
+                    hasValidCity,
+                    hasValidWorkArrangement,
+                    hasValidExperience
+                });
+                
+                if (hasValidJobTitle && hasValidCity && hasValidWorkArrangement && hasValidExperience) {
+                    console.log(`Attempt ${attempt}: Validation passed, returning result`);
                     return jsonResult;
+                } else {
+                    console.log(`Attempt ${attempt}: Validation failed, retrying...`);
                 }
             } catch (parseError) {
                 console.log(`Attempt ${attempt}: Invalid JSON, retrying...`);
