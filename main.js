@@ -130,15 +130,31 @@ export const handler = async (event, context) => {
             job_title = params.get('job_title');
             job_description = params.get('job_description');
         } else if (contentType.includes('multipart/form-data')) {
-            // For multipart form data, we'll need to parse it differently
-            // This is more complex, so for now we'll return an error
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({
-                    error: "Multipart form data not supported. Use JSON or URL-encoded form data."
-                })
-            };
+            // Parse multipart form data
+            // For Netlify Functions, multipart data is already parsed by the platform
+            // We can access it through event.body if it's a string, or event.body if it's an object
+            if (typeof event.body === 'object' && event.body !== null) {
+                // If body is already parsed as an object
+                job_title = event.body.job_title;
+                job_description = event.body.job_description;
+            } else {
+                // If body is still a string, try to parse it manually
+                // This is a simplified parser for basic multipart data
+                const boundary = contentType.split('boundary=')[1];
+                if (boundary) {
+                    const parts = event.body.split(`--${boundary}`);
+                    for (const part of parts) {
+                        if (part.includes('name="job_title"')) {
+                            const match = part.match(/name="job_title"\s*\r?\n\r?\n(.*?)(?:\r?\n|$)/s);
+                            if (match) job_title = match[1].trim();
+                        }
+                        if (part.includes('name="job_description"')) {
+                            const match = part.match(/name="job_description"\s*\r?\n\r?\n(.*?)(?:\r?\n|$)/s);
+                            if (match) job_description = match[1].trim();
+                        }
+                    }
+                }
+            }
         } else {
             // Try to parse as JSON by default
             try {
