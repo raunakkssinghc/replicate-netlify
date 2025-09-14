@@ -114,8 +114,47 @@ export const handler = async (event, context) => {
     }
 
     try {
-        const body = JSON.parse(event.body);
-        const { job_title, job_description } = body;
+        let job_title, job_description;
+        
+        // Check Content-Type to determine how to parse the body
+        const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
+        
+        if (contentType.includes('application/json')) {
+            // Parse JSON body
+            const body = JSON.parse(event.body);
+            job_title = body.job_title;
+            job_description = body.job_description;
+        } else if (contentType.includes('application/x-www-form-urlencoded')) {
+            // Parse form data
+            const params = new URLSearchParams(event.body);
+            job_title = params.get('job_title');
+            job_description = params.get('job_description');
+        } else if (contentType.includes('multipart/form-data')) {
+            // For multipart form data, we'll need to parse it differently
+            // This is more complex, so for now we'll return an error
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: "Multipart form data not supported. Use JSON or URL-encoded form data."
+                })
+            };
+        } else {
+            // Try to parse as JSON by default
+            try {
+                const body = JSON.parse(event.body);
+                job_title = body.job_title;
+                job_description = body.job_description;
+            } catch (parseError) {
+                return {
+                    statusCode: 400,
+                    headers,
+                    body: JSON.stringify({
+                        error: "Invalid request format. Use JSON or URL-encoded form data."
+                    })
+                };
+            }
+        }
         
         if (!job_title || !job_description) {
             return {
