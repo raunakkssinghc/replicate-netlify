@@ -131,30 +131,51 @@ export const handler = async (event, context) => {
             job_description = params.get('job_description');
         } else if (contentType.includes('multipart/form-data')) {
             // Parse multipart form data
-            // For Netlify Functions, multipart data is already parsed by the platform
-            // We can access it through event.body if it's a string, or event.body if it's an object
+            console.log('Processing multipart form data');
+            console.log('Content-Type:', contentType);
+            console.log('Body type:', typeof event.body);
+            console.log('Body content:', event.body);
+            
+            // For Netlify Functions, multipart data might be in different formats
             if (typeof event.body === 'object' && event.body !== null) {
                 // If body is already parsed as an object
+                console.log('Body is object, keys:', Object.keys(event.body));
                 job_title = event.body.job_title;
                 job_description = event.body.job_description;
-            } else {
+            } else if (typeof event.body === 'string') {
                 // If body is still a string, try to parse it manually
-                // This is a simplified parser for basic multipart data
+                console.log('Body is string, length:', event.body.length);
                 const boundary = contentType.split('boundary=')[1];
+                console.log('Boundary:', boundary);
+                
                 if (boundary) {
                     const parts = event.body.split(`--${boundary}`);
-                    for (const part of parts) {
+                    console.log('Number of parts:', parts.length);
+                    
+                    for (let i = 0; i < parts.length; i++) {
+                        const part = parts[i];
+                        console.log(`Part ${i}:`, part.substring(0, 200) + '...');
+                        
                         if (part.includes('name="job_title"')) {
                             const match = part.match(/name="job_title"\s*\r?\n\r?\n(.*?)(?:\r?\n|$)/s);
-                            if (match) job_title = match[1].trim();
+                            if (match) {
+                                job_title = match[1].trim();
+                                console.log('Found job_title:', job_title);
+                            }
                         }
                         if (part.includes('name="job_description"')) {
                             const match = part.match(/name="job_description"\s*\r?\n\r?\n(.*?)(?:\r?\n|$)/s);
-                            if (match) job_description = match[1].trim();
+                            if (match) {
+                                job_description = match[1].trim();
+                                console.log('Found job_description:', job_description);
+                            }
                         }
                     }
                 }
             }
+            
+            console.log('Final job_title:', job_title);
+            console.log('Final job_description:', job_description);
         } else {
             // Try to parse as JSON by default
             try {
@@ -172,12 +193,37 @@ export const handler = async (event, context) => {
             }
         }
         
+        // If we still don't have the data, try checking query parameters as a fallback
+        if ((!job_title || !job_description) && event.queryStringParameters) {
+            console.log('Checking query parameters as fallback');
+            job_title = job_title || event.queryStringParameters.job_title;
+            job_description = job_description || event.queryStringParameters.job_description;
+        }
+
+        // Validate required fields
         if (!job_title || !job_description) {
+            console.log('Validation failed - missing required fields');
+            console.log('job_title:', job_title);
+            console.log('job_description:', job_description);
+            console.log('Content-Type:', event.headers['content-type']);
+            console.log('Body type:', typeof event.body);
+            console.log('Body preview:', typeof event.body === 'string' ? event.body.substring(0, 500) : event.body);
+            
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({
-                    error: "Missing required fields: job_title and job_description"
+                    error: "Missing required fields: job_title and job_description",
+                    received: {
+                        job_title: job_title || null,
+                        job_description: job_description || null
+                    },
+                    debug: {
+                        contentType: event.headers['content-type'],
+                        bodyType: typeof event.body,
+                        bodyPreview: typeof event.body === 'string' ? event.body.substring(0, 200) : 'Not a string',
+                        queryParams: event.queryStringParameters
+                    }
                 })
             };
         }
