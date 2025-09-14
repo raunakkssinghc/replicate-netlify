@@ -1,36 +1,45 @@
 import Replicate from "replicate";
-import Busboy from "busboy";
 
 // Set up Replicate
 const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN
 });
 
-// Function to parse multipart form data
+// Function to parse multipart form data manually
 function parseMultipartForm(event) {
-    return new Promise((resolve, reject) => {
-        const fields = {};
-        const busboy = new Busboy({ headers: event.headers });
-
-        busboy.on('field', (fieldname, value) => {
-            fields[fieldname] = value;
-        });
-
-        busboy.on('finish', () => {
-            resolve(fields);
-        });
-
-        busboy.on('error', (error) => {
-            reject(error);
-        });
-
-        // For Netlify Functions, the body might be base64 encoded
-        if (event.isBase64Encoded) {
-            busboy.end(Buffer.from(event.body, 'base64'));
-        } else {
-            busboy.end(Buffer.from(event.body, 'utf8'));
+    const contentType = event.headers['content-type'] || event.headers['Content-Type'];
+    const boundary = contentType.split('boundary=')[1];
+    
+    if (!boundary) {
+        throw new Error('No boundary found in multipart form data');
+    }
+    
+    let body = event.body;
+    
+    // Handle base64 encoding if needed
+    if (event.isBase64Encoded) {
+        body = Buffer.from(body, 'base64').toString('utf8');
+    }
+    
+    const fields = {};
+    const parts = body.split(`--${boundary}`);
+    
+    for (const part of parts) {
+        if (part.includes('name="job_title"')) {
+            const match = part.match(/name="job_title"\s*\r?\n\r?\n(.*?)(?:\r?\n--|$)/s);
+            if (match) {
+                fields.job_title = match[1].trim();
+            }
         }
-    });
+        if (part.includes('name="job_description"')) {
+            const match = part.match(/name="job_description"\s*\r?\n\r?\n(.*?)(?:\r?\n--|$)/s);
+            if (match) {
+                fields.job_description = match[1].trim();
+            }
+        }
+    }
+    
+    return fields;
 }
 
 // Retry function for AI extraction
@@ -158,14 +167,14 @@ export const handler = async (event, context) => {
             job_title = params.get('job_title');
             job_description = params.get('job_description');
         } else if (contentType.includes('multipart/form-data')) {
-            // Parse multipart form data using busboy
-            console.log('Processing multipart form data with busboy');
+            // Parse multipart form data manually
+            console.log('Processing multipart form data manually');
             console.log('Content-Type:', contentType);
             console.log('Body type:', typeof event.body);
             console.log('isBase64Encoded:', event.isBase64Encoded);
             
             try {
-                const fields = await parseMultipartForm(event);
+                const fields = parseMultipartForm(event);
                 console.log('Parsed fields:', Object.keys(fields));
                 job_title = fields.job_title;
                 job_description = fields.job_description;
