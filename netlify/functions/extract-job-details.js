@@ -52,8 +52,10 @@ Job Description: ${jobDescription}
 
 Rules:
 - Clean the job title:
-  • Remove company names, departments, timelines, and duplicate words
-  • Keep only role + specialization + seniority (e.g., "Senior Data Engineer Intern")
+  • Remove only: location info (e.g., "New York, NY"), job IDs, and excessive duplicate words
+  • Keep: role, specialization, department, company (if relevant), and seniority level
+  • Example: "Data Engineer, Google Fi and Store, Infrastructure" → "Data Engineer, Google Fi and Store, Infrastructure"
+  • Example: "Senior Software Engineer - New York, NY" → "Senior Software Engineer"
 - Extract:
   • city → only city/state abbreviation (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, pick the FIRST one only. If not found, return null.
   • work_arrangement → one of: ["remote", "hybrid", "on-site"]. CRITICAL: Always return lowercase only ("hybrid" not "Hybrid"). If not found, return null.
