@@ -22,6 +22,7 @@ Rules:
 - Extract:
   • city → only city/state abbreviation (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, pick the FIRST one only. If not found, return null.
   • work_arrangement → one of: ["remote", "hybrid", "on-site"]. CRITICAL: Always return lowercase only ("hybrid" not "Hybrid"). If not found, return null.
+  • company → extract the company name from the job description. If not found, return null.
   • experience → one of:
       - Entry (0-2 Years)
       - Mid (3-5 Years)
@@ -45,6 +46,7 @@ Output Format (use this structure but extract from the ACTUAL job description ab
   "job_title": "[extract from job title]",
   "city": "[extract from job description or null]",
   "work_arrangement": "[remote/hybrid/on-site or null] (MUST be lowercase)",
+  "company": "[extract company name from job description or null]",
   "experience": "[Entry (0-2 Years)/Mid (3-5 Years)/Senior (6-8 Years)/Lead (8+ Years) or null]"
 }`;
 
@@ -66,6 +68,7 @@ Output Format (use this structure but extract from the ACTUAL job description ab
                 if (jsonResult.job_title && 
                     (jsonResult.city === null || typeof jsonResult.city === 'string') &&
                     (jsonResult.work_arrangement === null || ['remote', 'hybrid', 'on-site'].includes(jsonResult.work_arrangement)) &&
+                    (jsonResult.company === null || typeof jsonResult.company === 'string') &&
                     (jsonResult.experience === null || ['Entry (0-2 Years)', 'Mid (3-5 Years)', 'Senior (6-8 Years)', 'Lead (8+ Years)'].includes(jsonResult.experience))) {
                     return jsonResult;
                 }
