@@ -58,7 +58,17 @@ Output Format (use this structure but extract from the ACTUAL job description ab
             };
 
             const output = await replicate.run("deepseek-ai/deepseek-v3.1", { input });
-            const responseText = output.join("").trim();
+            let responseText = output.join("").trim();
+            
+            // Clean the response text - remove markdown code blocks and extra formatting
+            if (responseText.startsWith('```json')) {
+                responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (responseText.startsWith('```')) {
+                responseText = responseText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+            
+            // Remove any leading/trailing whitespace and newlines
+            responseText = responseText.trim();
             
             // Try to parse as JSON
             try {
@@ -74,14 +84,32 @@ Output Format (use this structure but extract from the ACTUAL job description ab
                 }
             } catch (parseError) {
                 console.log(`Attempt ${attempt}: Invalid JSON, retrying...`);
+                console.log(`Parse error: ${parseError.message}`);
+                console.log(`Response text: ${responseText.substring(0, 200)}...`);
                 if (attempt === maxRetries) {
-                    throw new Error(`Failed to extract valid JSON after ${maxRetries} attempts. Last response: ${responseText}`);
+                    // Return a fallback response instead of throwing an error
+                    return {
+                        job_title: jobTitle,
+                        city: null,
+                        work_arrangement: null,
+                        company: null,
+                        experience: null,
+                        error: "Failed to parse AI response as JSON"
+                    };
                 }
             }
         } catch (error) {
             console.log(`Attempt ${attempt} failed:`, error.message);
             if (attempt === maxRetries) {
-                throw error;
+                // Return a fallback response instead of throwing an error
+                return {
+                    job_title: jobTitle,
+                    city: null,
+                    work_arrangement: null,
+                    company: null,
+                    experience: null,
+                    error: `AI processing failed: ${error.message}`
+                };
             }
         }
         
