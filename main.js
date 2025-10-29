@@ -20,6 +20,7 @@ Rules:
   • Example: "Data Engineer, Google Fi and Store, Infrastructure" → "Data Engineer, Google Fi and Store, Infrastructure"
   • Example: "Senior Software Engineer - New York, NY" → "Senior Software Engineer"
 - Extract:
+  • job_title → ALWAYS extract from the job title input above, even if job description is missing or says "No Job Description"
   • city → only city/state abbreviation (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, pick the FIRST one only. If not found, return null.
   • work_arrangement → one of: ["remote", "hybrid", "on-site"]. CRITICAL: Always return lowercase only ("hybrid" not "Hybrid"). If not found, return null.
   • company → extract the company name from the job description. If not found, return null.
@@ -30,6 +31,7 @@ Rules:
       - Lead (8+ Years)
     If unclear, return null.
 - CRITICAL: DO NOT MAKE UP INFORMATION. Only extract what is explicitly stated in the job description.
+- SPECIAL CASE: If job description is missing, empty, or says "No Job Description", still return job_title from the job title input above, and set all other fields to null.
 - For experience level: Look for explicit mentions of years of experience, seniority keywords, or job level indicators. If none are found, return null.
 - Experience level mapping (CRITICAL - follow this exactly):
   • "1+ years" or "minimum 1 year" = Entry (0-2 Years)
@@ -41,9 +43,9 @@ Rules:
 - Output must be strictly JSON, no extra text, no explanations.
 - FINAL CHECK: work_arrangement must be lowercase ("hybrid", "remote", "on-site") - NEVER capitalized.
 
-Output Format (use this structure but extract from the ACTUAL job description above):
+Output Format (use this structure and extract from the appropriate sources):
 {
-  "job_title": "[extract from job title]",
+  "job_title": "[extract from job title input above]",
   "city": "[extract from job description or null]",
   "work_arrangement": "[remote/hybrid/on-site or null] (MUST be lowercase)",
   "company": "[extract company name from job description or null]",
