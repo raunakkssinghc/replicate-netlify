@@ -58,7 +58,7 @@ Rules:
   • Example: "Senior Software Engineer - New York, NY" → "Senior Software Engineer"
 - Extract:
   • job_title → ALWAYS extract from the job title input above, even if job description is missing or says "No Job Description"
-  • city → only city/state abbreviation (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, pick the FIRST one only. If not found, return null.
+  • city → extract from either the job description OR the job title. Use only city/state abbreviation format (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, prioritize and pick ONLY ONE - the one in the US if available. If not found in either source, return null.
   • work_arrangement → one of: ["remote", "hybrid", "on-site"]. CRITICAL: Always return lowercase only ("hybrid" not "Hybrid"). If not found, return null.
   • company → extract the company name from the job description. If not found, return null.
   • experience → one of:
@@ -83,7 +83,7 @@ Rules:
 Output Format (use this structure and extract from the appropriate sources):
 {
   "job_title": "[extract from job title input above]",
-  "city": "[extract from job description or null]",
+  "city": "[extract from job description or job title, or null]",
   "work_arrangement": "[remote/hybrid/on-site or null] (MUST be lowercase)",
   "company": "[extract company name from job description or null]",
   "experience": "[Entry (0-2 Years)/Mid (3-5 Years)/Senior (6-8 Years)/Lead (8+ Years) or null]"
@@ -96,7 +96,7 @@ Output Format (use this structure and extract from the appropriate sources):
                 max_new_tokens: 200
             };
 
-            const output = await replicate.run("deepseek-ai/deepseek-v3.1", { input });
+            const output = await replicate.run("openai/gpt-4o-mini", { input });
             let responseText = output.join("").trim();
             
             // Clean the response text - remove markdown code blocks and extra formatting
