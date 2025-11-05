@@ -21,7 +21,7 @@ Rules:
   • Example: "Senior Software Engineer - New York, NY" → "Senior Software Engineer"
 - Extract:
   • job_title → ALWAYS extract from the job title input above, even if job description is missing or says "No Job Description"
-  • city → extract from either the job description OR the job title. Use only city/state abbreviation format (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, prioritize and pick ONLY ONE - the one in the US if available. If not found in either source, return null.
+  • city → extract from BOTH the job description AND the job title. Check both sources carefully. Use only city/state abbreviation format (e.g., "Richmond, VA" not "Richmond, Virginia"), drop country. If multiple cities listed, prioritize and pick ONLY ONE - the one in the US if available. If not found in either source, return null.
   • work_arrangement → one of: ["remote", "hybrid", "on-site"]. CRITICAL: Always return lowercase only ("hybrid" not "Hybrid"). If not found, return null.
   • company → extract the company name from the job description. If not found, return null.
   • experience → one of:
@@ -46,7 +46,7 @@ Rules:
 Output Format (use this structure and extract from the appropriate sources):
 {
   "job_title": "[extract from job title input above]",
-  "city": "[extract from job description or job title, or null]",
+  "city": "[extract from job description AND job title - check both sources, or null]",
   "work_arrangement": "[remote/hybrid/on-site or null] (MUST be lowercase)",
   "company": "[extract company name from job description or null]",
   "experience": "[Entry (0-2 Years)/Mid (3-5 Years)/Senior (6-8 Years)/Lead (8+ Years) or null]"
